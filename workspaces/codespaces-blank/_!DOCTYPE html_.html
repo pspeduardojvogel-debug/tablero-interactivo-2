@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Expedición E-R-C: Dominio del Autocontrol (Actualizado)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-image: url('https://images.unsplash.com/photo-1544027993-37dbfeaea18c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80'); background-size: cover; background-position: center; background-attachment: fixed; min-height: 100vh; position: relative; }
+        body::before { content:''; position:absolute; top:0;left:0;right:0;bottom:0; background:rgba(255,255,255,0.85); z-index:-1; }
+
+        .content-panel { display:none; animation: fadeIn 0.4s ease-in-out; }
+        .content-panel.active { display:block; }
+        @keyframes fadeIn { from{opacity:0; transform: translateY(10px);} to{opacity:1; transform: translateY(0);} }
+
+        .nav-link { transition: all 0.25s ease; position:relative; overflow:hidden; display:flex; justify-content:space-between; align-items:center; }
+        .nav-link::before { content:''; position:absolute; left:-100%; top:0; width:100%; height:100%; background:linear-gradient(90deg, transparent, rgba(59,130,246,0.06), transparent); transition:left 0.5s; }
+        .nav-link:hover::before { left:100%; }
+        .nav-link.active { background: linear-gradient(to right,#EBF8FF,#dbeafe); border-left:4px solid #3B82F6; color:#1e40af; font-weight:600; box-shadow: 0 2px 8px rgba(59,130,246,0.12); }
+
+        /* Check mark */
+        .check-mark { display:none; color: #10b981; font-weight:bold; margin-left:8px; animation: popIn 0.3s ease; }
+        @keyframes popIn { 0%{transform:scale(0);} 80%{transform:scale(1.2);} 100%{transform:scale(1);} }
+        /* Ensure check appears when .completed on nav-link */
+        .nav-link.completed .check-mark { display:inline-block; }
+
+        /* Optional: make nav-link show subtle completed style */
+        .nav-link.completed { border-color: #d1fae5; background: linear-gradient(90deg,#f0fdf4,#ecfdf5); color:#065f46; }
+
+        .badge { text-align:center; padding:1rem; border-radius:16px; width:80px; height:80px; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:all 0.3s ease; font-size:2rem; position:relative; }
+        .badge.unlocked { background: linear-gradient(135deg,#d4f4dd,#86efac); border:2px solid #22c55e; box-shadow:0 4px 12px rgba(34,197,94,0.18); }
+        .badge.locked { background: linear-gradient(135deg,#f3f4f6,#e5e7eb); border:2px dashed #9ca3af; opacity:0.75; }
+        .badge.unlocked::after { content:'✓'; position:absolute; top:-8px; right:-8px; width:24px; height:24px; background:#22c55e; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:0.8rem; font-weight:bold; }
+
+        .progress-bar { height:8px; background:#e5e7eb; border-radius:4px; overflow:hidden; margin:1rem 0; }
+        .progress-fill { height:100%; background:linear-gradient(90deg,#3B82F6,#10b981); width:0%; transition:width 0.8s ease; border-radius:4px; }
+
+        .form-group { margin-bottom:1.25rem; }
+        .form-control { width:100%; padding:0.75rem; border:2px solid #d1d5db; border-radius:8px; font-size:1rem; transition:all 0.2s ease; }
+        .form-control:focus { outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.08); }
+        .btn-primary { background: linear-gradient(135deg,#3b82f6,#2563eb); color:white; padding:0.75rem 1.25rem; border:none; border-radius:8px; font-weight:600; cursor:pointer; transition:all 0.2s ease; width:100%; font-size:1.05rem; }
+        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(59,130,246,0.18); }
+
+        .feedback { padding:1rem; border-radius:8px; margin-top:1rem; display:none; animation: slideDown 0.35s ease; }
+        @keyframes slideDown { from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:translateY(0);} }
+        .feedback.success { background: linear-gradient(135deg,#d4f4dd,#86efac); border:2px solid #22c55e; color:#166534; }
+
+        .xp-gain { display:inline-block; background:#22c55e; color:white; padding:0.25rem 0.5rem; border-radius:9999px; font-size:0.8rem; font-weight:600; margin-left:0.5rem; animation:bounce 0.5s ease; }
+        @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
+
+        .video-link { display:block; text-align:center; padding:1rem; background:linear-gradient(135deg,#3b82f6,#2563eb); color:white; border-radius:12px; font-weight:600; text-decoration:none; transition:all 0.25s ease; box-shadow:0 4px 12px rgba(59,130,246,0.22); margin:1rem 0; }
+        .video-link:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(59,130,246,0.28); }
+        .video-link i { margin-right:8px; }
+
+        .scenario-card { background:linear-gradient(135deg,#fef3c7,#fde68a); border:2px solid #f59e0b; border-radius:12px; padding:1.5rem; margin:1rem 0; }
+        .option-btn { padding:1rem; border-radius:12px; margin:0.5rem 0; font-weight:600; transition:all 0.2s ease; border:2px solid transparent; }
+        .option-correct { background:linear-gradient(135deg,#d4f4dd,#86efac); border-color:#22c55e; color:#166534; }
+        .option-incorrect { background:linear-gradient(135deg,#fee2e2,#fca5a5); border-color:#ef4444; color:#991b1b; }
+
+        /* small screens tweak */
+        @media (max-width: 768px) {
+            .badge { width:72px; height:72px; font-size:1.6rem; }
+        }
+
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 relative z-10">
+
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-3">
+                Expedición E-R-C: Dominio del Autocontrol
+            </h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-4xl mx-auto">
+                Un entrenamiento intensivo para tomar el control de tus reacciones emocionales en el trabajo.
+            </p>
+            <div class="mt-4 inline-flex items-center bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+                <i class="fas fa-rocket mr-2"></i>
+                Misión Activa: Conviértete en el Capitán de tus Emociones
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
+
+            <!-- Stepper -->
+            <div class="lg:col-span-1 order-2 lg:order-1">
+                <div class="bg-white p-5 rounded-2xl shadow-xl sticky top-6">
+                    <h2 class="text-xl font-bold mb-5 text-gray-800 flex items-center">
+                        <i class="fas fa-map-signs mr-3 text-blue-600"></i>
+                        Etapas de la Expedición
+                    </h2>
+                    <nav>
+                        <ul class="space-y-3">
+                            <li>
+                                <button id="nav-etapa-1" data-target="etapa-1" class="nav-link w-full text-left p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition duration-300 flex items-center justify-between">
+                                    <span>Etapa 1: Activación del Radar</span>
+                                    <span class="check-mark">✅</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button id="nav-etapa-2" data-target="etapa-2" class="nav-link w-full text-left p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition duration-300 flex items-center justify-between">
+                                    <span>Etapa 2: Mapa de Contingencias</span>
+                                    <span class="check-mark">✅</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button id="nav-etapa-3" data-target="etapa-3" class="nav-link w-full text-left p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition duration-300 flex items-center justify-between">
+                                    <span>Etapa 3: Arsenal de Respuestas</span>
+                                    <span class="check-mark">✅</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button id="nav-etapa-4" data-target="etapa-4" class="nav-link w-full text-left p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition duration-300 flex items-center justify-between">
+                                    <span>Etapa 4: Estrategia Personalizada</span>
+                                    <span class="check-mark">✅</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button id="nav-etapa-5" data-target="etapa-5" class="nav-link w-full text-left p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition duration-300 flex items-center justify-between">
+                                    <span>Etapa 5: Campo de Pruebas</span>
+                                    <span class="check-mark">✅</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button id="nav-etapa-6" data-target="etapa-6" class="nav-link w-full text-left p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition duration-300 flex items-center justify-between">
+                                    <span>Etapa Final: Certificación</span>
+                                    <span class="check-mark">✅</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                    <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+                        <p class="text-sm text-gray-700">
+                            <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                            <strong>Progreso:</strong> <span id="progress-text">0%</span>
+                        </p>
+                        <div class="progress-bar mt-2">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="lg:col-span-3 order-1 lg:order-2">
+                <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
+
+                    <!-- Etapa 1 -->
+                    <div id="etapa-1" class="content-panel active">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-3xl font-bold text-blue-600 flex items-center">
+                                <i class="fas fa-satellite-dish mr-3"></i>
+                                Etapa 1: Activación del Radar
+                            </h2>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">25 XP</span>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 p-5 rounded-r-xl mb-6">
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Objetivo de la Etapa:</p>
+                            <p class="mb-3">Encender tu "Radar" interno para detectar las situaciones laborales que te hacen perder la calma o reaccionar de forma impulsiva.</p>
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Habilidad a desarrollar:</p>
+                            <p>Voluntad y Enfoque.</p>
+                        </div>
+
+                        <div class="bg-amber-50 border-l-4 border-amber-400 p-5 rounded-r-xl mb-6">
+                            <h3 class="font-bold text-gray-800 flex items-center mb-3">
+                                <i class="fas fa-lightbulb mr-2 text-amber-600"></i>
+                                Piensa y Reflexiona:
+                            </h3>
+                            <ul class="list-disc list-inside space-y-2 text-gray-700">
+                                <li>Identifica una situación recurrente en tu trabajo que te hace sentir frustrado o enojado.</li>
+                                <li>¿Cómo afecta esa frustración a tu trabajo y a tu bienestar físico o emocional?</li>
+                            </ul>
+                        </div>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-scroll mr-2 text-blue-600"></i>
+                            Actividad: Declaración de Desafío
+                        </h3>
+                        <p class="mb-4 text-gray-700">Define tu desafío inicial (Ej: "Lograré hacer una pausa de 5 segundos antes de responder a un correo agresivo").</p>
+                        <button onclick="completarEtapa(1,25,'insignia-1')" class="btn-primary">
+                            <i class="fas fa-check mr-2"></i>
+                            Completar Etapa (+25 XP)
+                        </button>
+                    </div>
+
+                    <!-- Etapa 2 -->
+                    <div id="etapa-2" class="content-panel">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-3xl font-bold text-blue-600 flex items-center">
+                                <i class="fas fa-map mr-3"></i>
+                                Etapa 2: Mapa de Contingencias
+                            </h2>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">50 XP</span>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 p-5 rounded-r-xl mb-6">
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Objetivo de la Etapa:</p>
+                            <p class="mb-3">Crear un "Mapa de Contingencias" para entender exactamente cómo funciona tu reacción actual: qué la provoca (Estímulo), cómo reaccionas (Reacción) y qué obtienes de eso (Consecuencia).</p>
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Habilidad a desarrollar:</p>
+                            <p>Análisis Estratégico.</p>
+                        </div>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-video mr-2 text-red-600"></i>
+                            Recurso de la Misión: Analizando tu Ciclo E-R-C
+                        </h3>
+                        <a href="https://www.youtube.com/watch?v=qTyR8tl5iGc" target="_blank" class="video-link">
+                            <i class="fab fa-youtube"></i>
+                            Ver Video: Analizando tu Ciclo E-R-C
+                        </a>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                            <i class="fas fa-drafting-compass mr-2 text-green-600"></i>
+                            Actividad: ¡Delinea tu Ciclo!
+                        </h3>
+                        <form id="form-etapa2" class="space-y-6">
+                            <div class="form-group">
+                                <label>1. Describe tu Reacción (R) <span class="text-gray-500">(Ej: "Grito en las reuniones")</span></label>
+                                <input type="text" required class="form-control" placeholder="Escribe tu reacción aquí...">
+                            </div>
+                            <div class="form-group">
+                                <label>2. ¿Cuál es el Estímulo (E) que la provoca?</label>
+                                <input type="text" required class="form-control" placeholder="Describe el estímulo...">
+                            </div>
+                            <div class="form-group">
+                                <label>3. ¿Cuál es la Consecuencia (C) que obtienes?</label>
+                                <textarea required class="form-control" rows="3" placeholder="Ej: Me desestreso temporalmente, pero pierdo credibilidad..."></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-paper-plane mr-2"></i>
+                                Enviar Análisis (+50 XP)
+                            </button>
+                        </form>
+                        <div id="feedback-etapa2" class="feedback success">
+                            <p class="font-bold flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                ¡Excelente análisis!
+                            </p>
+                            <p>Has ganado <strong class="xp-gain">+50 XP</strong>. Tu mapa de contingencias está listo para la siguiente etapa.</p>
+                        </div>
+                    </div>
+
+                    <!-- Etapa 3 -->
+                    <div id="etapa-3" class="content-panel">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-3xl font-bold text-blue-600 flex items-center">
+                                <i class="fas fa-toolbox mr-3"></i>
+                                Etapa 3: Arsenal de Respuestas
+                            </h2>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">100 XP</span>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 p-5 rounded-r-xl mb-6">
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Objetivo de la Etapa:</p>
+                            <p class="mb-3">Aprender y practicar técnicas de reemplazo (Respuestas Alternativas) que puedes usar en momentos de presión para sustituir la reacción automática.</p>
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Habilidad a desarrollar:</p>
+                            <p>Autocontrol y Práctica.</p>
+                        </div>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-video mr-2 text-red-600"></i>
+                            Recurso: Modelado de R-Alternativa
+                        </h3>
+                        <a href="https://www.youtube.com/watch?v=tA2kT8eSjtg" target="_blank" class="video-link">
+                            <i class="fab fa-youtube"></i>
+                            Ver Video: Modelado de R-Alternativa
+                        </a>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                            <i class="fas fa-theater-masks mr-2 text-purple-600"></i>
+                            Actividad: ¡Simulación de Tensión!
+                        </h3>
+                        <div class="scenario-card">
+                            <p class="font-bold text-lg mb-3 flex items-center">
+                                <i class="fas fa-exclamation-triangle mr-2 text-amber-600"></i>
+                                ESCENARIO:
+                            </p>
+                            <p class="mb-4 text-gray-800">Estás en una reunión. Tu jefe critica tu informe frente a todos. Sientes que la sangre te sube a la cabeza. ¿Qué haces?</p>
+                            <div class="space-y-3">
+                                <button onclick="seleccionarOpcion('incorrecta', this)" class="option-btn w-full text-left option-incorrect">
+                                    <span class="font-bold">Opción B:</span> Interrumpo al jefe y le digo que está equivocado.
+                                </button>
+                                <button onclick="seleccionarOpcion('correcta', this)" class="option-btn w-full text-left">
+                                    <span class="font-bold">Opción A:</span> Tomo una respiración profunda, cuento hasta 5 y pido una pausa.
+                                </button>
+                            </div>
+                            <div id="feedback-opcion" class="feedback mt-4"></div>
+                        </div>
+                    </div>
+
+                    <!-- Etapa 4 -->
+                    <div id="etapa-4" class="content-panel">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-3xl font-bold text-blue-600 flex items-center">
+                                <i class="fas fa-chess-knight mr-3"></i>
+                                Etapa 4: Estrategia Personalizada
+                            </h2>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">75 XP</span>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 p-5 rounded-r-xl mb-6">
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Objetivo de la Etapa:</p>
+                            <p class="mb-3">Adaptar las herramientas aprendidas a tu contexto laboral específico, creando un plan de afrontamiento personalizado para situaciones de riesgo.</p>
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Habilidad a desarrollar:</p>
+                            <p>Toma de Decisiones y Transferencia.</p>
+                        </div>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-video mr-2 text-red-600"></i>
+                            Recurso: Diseñando tu Plan
+                        </h3>
+                        <a href="https://www.youtube.com/watch?v=5cwTl_STzTo" target="_blank" class="video-link">
+                            <i class="fab fa-youtube"></i>
+                            Ver Video: Técnicas de Control Emocional en el Trabajo
+                        </a>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                            <i class="fas fa-clipboard-list mr-2 text-indigo-600"></i>
+                            Actividad: Crea tu Plan de Afrontamiento
+                        </h3>
+                        <form id="form-etapa4" class="space-y-6">
+                            <div class="form-group">
+                                <label>1. Situación de Riesgo (Si...)</label>
+                                <input type="text" required class="form-control" placeholder="Ej: Si mi jefe me critica en una reunión...">
+                            </div>
+                            <div class="form-group">
+                                <label>2. Respuesta Alternativa (Entonces...)</label>
+                                <textarea required class="form-control" rows="3" placeholder="Ej: Entonces, respiro profundamente y respondo con calma."></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save mr-2"></i>
+                                Guardar Plan (+75 XP)
+                            </button>
+                        </form>
+                        <div id="feedback-etapa4" class="feedback success">
+                            <p class="font-bold flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                ¡Plan Personalizado Creado!
+                            </p>
+                            <p>Has ganado <strong class="xp-gain">+75 XP</strong>. Tu estrategia está lista para el campo de pruebas.</p>
+                        </div>
+                    </div>
+
+                    <!-- Etapa 5 -->
+                    <div id="etapa-5" class="content-panel">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-3xl font-bold text-blue-600 flex items-center">
+                                <i class="fas fa-dumbbell mr-3"></i>
+                                Etapa 5: Campo de Pruebas
+                            </h2>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">100 XP</span>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 p-5 rounded-r-xl mb-6">
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Objetivo de la Etapa:</p>
+                            <p class="mb-3">Aplicar tu plan personalizado en un escenario laboral real, registrando la ejecución y ajustando según sea necesario.</p>
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Habilidad a desarrollar:</p>
+                            <p>Ejecución y Monitoreo.</p>
+                        </div>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-video mr-2 text-red-600"></i>
+                            Recurso: Práctica en el Mundo Real
+                        </h3>
+                        <a href="https://www.youtube.com/watch?v=OjgrkAnZ5Kc" target="_blank" class="video-link">
+                            <i class="fab fa-youtube"></i>
+                            Ver Video: Cómo Mantener la Calma Bajo Presión (Funciona 2025)
+                        </a>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                            <i class="fas fa-clipboard-check mr-2 text-green-600"></i>
+                            Actividad: Registro de Ejecución
+                        </h3>
+                        <form id="form-etapa5" class="space-y-6">
+                            <div class="form-group">
+                                <label>1. Fecha de Aplicación</label>
+                                <input type="date" required class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>2. Descripción de la Situación</label>
+                                <textarea required class="form-control" rows="3" placeholder="Ej: En la reunión de hoy, mi jefe criticó mi trabajo..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>3. ¿Aplicaste la R-Alternativa?</label>
+                                <select required class="form-control">
+                                    <option value="">Selecciona una opción</option>
+                                    <option value="si">Sí, completamente</option>
+                                    <option value="parcial">Parcialmente</option>
+                                    <option value="no">No</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-check-square mr-2"></i>
+                                Registrar Ejecución (+100 XP)
+                            </button>
+                        </form>
+                        <div id="feedback-etapa5" class="feedback success">
+                            <p class="font-bold flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                ¡Registro Completado!
+                            </p>
+                            <p>Has ganado <strong class="xp-gain">+100 XP</strong>. Continúa monitoreando tu progreso.</p>
+                        </div>
+                    </div>
+
+                    <!-- Etapa 6 -->
+                    <div id="etapa-6" class="content-panel">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-3xl font-bold text-blue-600 flex items-center">
+                                <i class="fas fa-trophy mr-3"></i>
+                                Etapa Final: Certificación de Dominio
+                            </h2>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">150 XP</span>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 p-5 rounded-r-xl mb-6">
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Objetivo de la Etapa:</p>
+                            <p class="mb-3">Evaluar tu progreso general, medir el cambio conductual y reflexionar sobre el mantenimiento a largo plazo.</p>
+                            <p class="text-lg font-semibold text-gray-800 mb-2">Habilidad a desarrollar:</p>
+                            <p>Evaluación y Reflexión.</p>
+                        </div>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-video mr-2 text-red-600"></i>
+                            Recurso: Medición del Cambio
+                        </h3>
+                        <a href="https://www.youtube.com/watch?v=BqGj_XyKE_g" target="_blank" class="video-link">
+                            <i class="fab fa-youtube"></i>
+                            Ver Video: Gamificación Educativa
+                        </a>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                            <i class="fas fa-medal mr-2 text-yellow-600"></i>
+                            Actividad: Reflexión Final
+                        </h3>
+                        <form id="form-etapa6" class="space-y-6">
+                            <div class="form-group">
+                                <label>1. Compara tu Línea Base con las Consecuencias Actuales</label>
+                                <textarea required class="form-control" rows="4" placeholder="Ej: Antes reaccionaba impulsivamente; ahora controlo mis respuestas..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>2. ¿Qué Estrategias Mantendrás a Largo Plazo?</label>
+                                <textarea required class="form-control" rows="3" placeholder="Ej: Usaré la respiración profunda diariamente..."></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-certificate mr-2"></i>
+                                Certificar Dominio (+150 XP)
+                            </button>
+                        </form>
+                        <div id="feedback-etapa6" class="feedback success">
+                            <p class="font-bold flex items-center text-lg">
+                                <i class="fas fa-crown mr-2"></i>
+                                ¡Certificación Completa!
+                            </p>
+                            <p class="mt-2">Has ganado <strong class="xp-gain">+150 XP</strong> y la <strong>Certificación de Dominio</strong>.</p>
+                            <div class="mt-4 p-4 bg-yellow-100 border-2 border-yellow-400 rounded-xl text-center">
+                                <p class="font-bold text-yellow-800">¡Felicitaciones, Capitán del Autocontrol!</p>
+                                <p class="text-sm mt-1">Has completado la Expedición E-R-C con éxito.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Centro de Comando -->
+                    <div class="mt-12 border-t-2 border-gray-200 pt-8">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center justify-center">
+                            <i class="fas fa-space-station-moon-construction mr-2 text-indigo-600"></i>
+                            Centro de Comando
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="text-center">
+                                <h4 class="font-bold text-gray-700 mb-4 text-lg">Progreso de XP</h4>
+                                <div class="chart-container relative" style="height:300px; max-width:400px; margin:0 auto;">
+                                    <canvas id="xpChart"></canvas>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-4">
+                                    <i class="fas fa-bullseye mr-1 text-green-600"></i>
+                                    Meta: <strong>500 XP</strong> para la Medalla Suprema
+                                </p>
+                                <p class="mt-2 text-2xl font-bold text-indigo-600" id="xp-total">0 XP</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-700 mb-4 text-lg text-center">Insignias Desbloqueadas</h4>
+                                <div class="flex flex-wrap gap-4 justify-center">
+                                    <div id="insignia-1" class="badge locked">
+                                        <div class="text-3xl">🚨</div>
+                                        <p class="text-xs font-medium mt-1">Radar Activado</p>
+                                    </div>
+                                    <div id="insignia-2" class="badge locked">
+                                        <div class="text-3xl">🗺️</div>
+                                        <p class="text-xs font-medium mt-1">Mapa E-R-C</p>
+                                    </div>
+                                    <div id="insignia-3" class="badge locked">
+                                        <div class="text-3xl">🛡️</div>
+                                        <p class="text-xs font-medium mt-1">Táctico de Respuesta</p>
+                                    </div>
+                                    <div id="insignia-4" class="badge locked">
+                                        <div class="text-3xl">♟️</div>
+                                        <p class="text-xs font-medium mt-1">Estratega</p>
+                                    </div>
+                                    <div id="insignia-5" class="badge locked">
+                                        <div class="text-3xl">🏋️</div>
+                                        <p class="text-xs font-medium mt-1">Probador</p>
+                                    </div>
+                                    <div id="insignia-final" class="badge locked">
+                                        <div class="text-3xl">🏆</div>
+                                        <p class="text-xs font-medium mt-1">Certificación</p>
+                                    </div>
+                                    <div id="insignia-medalla" class="badge locked">
+                                        <div class="text-3xl">🏅</div>
+                                        <p class="text-xs font-medium mt-1">Medalla Suprema</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Sustento Teórico y Reflexión Crítica -->
+        <div class="mt-10">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <details class="p-6 sm:p-8">
+                    <summary class="text-xl sm:text-2xl font-bold text-gray-800 cursor-pointer flex items-center justify-between">
+                        <span class="flex items-center">
+                            <i class="fas fa-scroll mr-3 text-indigo-600"></i>
+                            Sustento Teórico y Reflexión Crítica
+                        </span>
+                        <i class="fas fa-chevron-down ml-2 transition-transform duration-300" id="chevron"></i>
+                    </summary>
+                    <div class="prose max-w-none mt-6 border-t border-gray-200 pt-6">
+                        <p><strong>Estudiante:</strong> Eduardo Javier Vogel</p>
+                        <p><strong>Fecha de entrega:</strong> 17/11/2025</p>
+
+                        <h3>Datos del estudiante</h3>
+                        <p><strong>Nombre y apellidos:</strong> Eduardo Javier Vogel</p>
+                        <p><strong>Fecha de entrega:</strong> 17/11/2025</p>
+
+                        <h3>Diseño de un tablero interactivo o micrositio para el aprendizaje</h3>
+
+                       <section id="justificacion" class="contenido-seccion">
+    <h2>Justificación Pedagógica y Metodológica del Diseño (Sustento Teórico)</h2>
+
+    <p>
+    El micrositio <strong>“Misión E–R–C”</strong>, presentado mediante un entorno navegable integrador dentro de Genially,
+    se fundamenta en un diseño instruccional que articula la Autorregulación del Aprendizaje (ARA), el Análisis Funcional
+    de la Conducta (AFC) y los principios de la Gamificación. Esta convergencia permite construir una experiencia formativa
+    interactiva, secuenciada y orientada al desarrollo del autocontrol emocional mediante la identificación de estímulos,
+    respuestas y consecuencias, así como de la construcción de una Respuesta Alternativa funcional y sostenible.
+    </p>
+
+    <p>
+    La estructura progresiva del micrositio toma como referencia las seis fases del modelo 
+    <strong>CAIT</strong> (Pradas, 2005), vinculado a las teorías contemporáneas de autorregulación (Díaz-Barriga & Hernández, 
+    2002; Zimmerman, 1994, 1998). En las primeras misiones —correspondientes a Sensibilización y Planificación— el usuario identifica 
+    una meta personal y establece una línea base, en coherencia con los principios de planificación del ARA. La integración del AFC 
+    en estas etapas iniciales, siguiendo a Labrador (s.f.) y a Ayllon & Azrin (1974), introduce el análisis funcional operativo 
+    y fomenta habilidades como la discriminación de antecedentes, conductas y consecuencias.
+    </p>
+
+    <p>
+    Las misiones intermedias, asociadas a las fases de Elaboración y Personalización, promueven la adquisición y práctica de una 
+    <strong>Respuesta Alternativa (R-Alternativa)</strong> mediante simulaciones, modelado y ejercicios guiados. Estos recursos se apoyan
+    tanto en principios conductuales como en los aportes motivacionales de Pintrich (2000), facilitando la síntesis, la toma de 
+    decisiones y el diseño personal de un plan de afrontamiento orientado al autocontrol.
+    </p>
+
+    <p>
+    En las misiones finales —Aplicación y Evaluación— se enfatiza la ejecución de la conducta alternativa en el entorno real y el 
+    monitoreo continuo de su efectividad. La experiencia culmina con una instancia reflexiva que permite evaluar el cambio, analizar 
+    su estabilidad y planificar el mantenimiento conductual, en coherencia con las recomendaciones del ARA y del AFC.
+    </p>
+
+    <p>
+    Desde el enfoque de la <strong>gamificación</strong>, el micrositio adopta una narrativa basada en misiones que actúa como estructura 
+    motivadora (Kapp, 2012) y se complementa con mecánicas de retos, recompensas, puntos de experiencia (XP) e insignias. La evidencia 
+    indica que estos elementos fortalecen la motivación, la autoeficacia y el compromiso con la tarea (Vergara Rodríguez et al., 2019; 
+    Zambrano-Álava, 2020). Asimismo, <em>las investigaciones reflejan que el objetivo principal de la gamificación es tener el dominio de 
+    las conductas del individuo al momento de realizar un juego</em>, lo que se articula directamente con los principios del AFC al 
+    establecer contingencias claras que moldean conductas alternativas deseables (Ayllon & Azrin, 1974; Melo-Solarte & Díaz, 2018).
+    </p>
+
+    <p>
+    Los componentes gamificados —XP, indicadores de progreso, insignias y recompensas finales— proporcionan seguimiento continuo al 
+    aprendizaje y fortalecen la competencia percibida y la autoeficacia (Gallejo & Molina, 2014; Aguilera et al., 2014). La integración 
+    de recursos multimedia, como videos, animaciones y elementos interactivos, cumple funciones de modelado y clarificación conceptual, 
+    coherentes con los aportes de Cataldi et al. (2013) y Osorio et al. (2012).
+    </p>
+
+    <p>
+    Finalmente, el diseño incorpora mecanismos de <strong>evaluación formativa</strong> mediante retroalimentación inmediata, señales de avance 
+    y actividades que permiten al usuario monitorear su progreso, identificar errores y reforzar los aprendizajes en construcción, 
+    siguiendo los planteos de Larroy (s.f.) y Sebastián et al. (s.f.). En conjunto, el micrositio constituye una propuesta pedagógica 
+    integral basada en principios de autorregulación, análisis funcional y gamificación, generando una experiencia de aprendizaje 
+    estructurada, motivadora y orientada a la transformación conductual.
+    </p>
+</section>
+
+                        <h4 class="mt-6">Referencias</h4>
+                        <ul>
+                            <li>Aguilera, A., Fúquene, C., & Ríos, W. (2014). Aprende jugando: el uso de técnicas de gamificación en entornos de aprendizaje. IM-Pertinente, 2(1), 125-143. Recuperado de https://www.researchgate.net/profile/William_Rios2/publication/317083719_Aprende_jugando_el_uso_de_tecnicas_de_gamificacion_en_entornos_de_aprendizaje/links/592497ffaca27295a8c0f1f4/Aprende-jugando-el-uso-de-tecnicas-de-gamificacion-en-entornos-de-aprendizaje.</li>
+                            <li>Ayllon, T. y Azrin, N. (1974). Economía de fichas. Trillas (original de 1968).</li>
+                            <li>Bandura, A. (1987). Pensamiento y acción: Fundamentos sociales. Barcelona: Martínez Roca.</li>
+                            <li>Cataldi, Z., Lage, F. y Dominighini, C. (2013). Fundamentos para el uso de simulaciones en la enseñanza. Revista de Informática Educativa y Medios Audiovisuales, 10(17), 8-16. Recuperado de https://xdoc.mx/documents/fundamentos-para-el-uso-de-simulaciones-en-la-enseanza-5fb4acab16713.</li>
+                            <li>Díaz-Barriga, F. y Hernández, G. (2002). Estrategias docentes para un aprendizaje significativo. Una interpretación constructivista. McGraw-Hill.</li>
+                            <li>Gallejo, F., & Molina, R. L. (2014, 09 de Julio). JENUI: 2020. Obtenido de XXVI Jornadas sobre la Enseñanza Universitaria de la Informática: https://rua.ua.es/dspace/bitstream/10045/39195/1/Gamificacio%CC%81n%20(definicio%CC%81n).pdf.</li>
+                            <li>García, S., Morte, E., & Almansa, S. (2015). Redes sociales aplicadas a la educación: EDMODO. edmetic. Revista de Educación Mediática y TIC, 8(1), 88-101.</li>
+                            <li>Kapp, K. M. (2012). The gamification of learning and instruction: game-based methods and strategies for training and education. John Wiley & Sons.</li>
+                            <li>Labrador, F. J. (n.f.). Introducción a las técnicas de modificación de conducta. En F. Labrador et al. (Eds.), Técnicas de modificación y terapia de conducta. Pirámide.</li>
+                            <li>Larroy, C. (n.f.). Entrenamiento en autoinstrucciones. En F. Labrador et al. (Eds.), Técnicas de modificación y terapia de conducta. Pirámide.</li>
+                            <li>Melo-Solarte, D., & Díaz, P. (2018). El Aprendizaje Afectivo y la Gamificación en Escenarios de Educación Virtual. Información Tecnológica, 29(3), 237-248. doi:http://dx.doi.org/10.4067/S0718-07642018000300237.</li>
+                            <li>Osorio, P., Ángel, M. y Franco, A. (2012). El uso de simuladores educativos para el desarrollo de competencia en la formación universitaria de pregrado. Revista Q, 7(13). Recuperado de https://repository.upb.edu.co/bitstream/handle/20.500.11912/6775/E1%20uso%20de%20simuladores%20educativos%20para%20el%20desarrollo%20de%20competencias.pdf?sequence=1&isAllowed=y.</li>
+                            <li>Pintrich, P. (2000). The Role of Goal Orientation in Self-Regulated Learning Components of Classroom Academic Performance. In Handbook of self-regulation (pp. 451-502). Recuperado de https://www.sciencedirect.com/science/article/pii/B9780121098902500433.</li>
+                            <li>Pradas, S. (2005). Propuestas para el uso de la Pizarra Digital Interactiva con el Modelo CAIT. Fundación Encuentro.</li>
+                            <li>Sebastián, A., Ballesteros, B. y Sánchez, M. (s. f.). Técnicas de estudio [presentación]. Recuperado de http://qinnova.uned.es/archivos_publicos/qweb_paginas/3439/tecnicasdeestudio.pdf.</li>
+                            <li>Vergara Rodríguez, D., Mezquita Mezquita, J., & Gómez Vallecillo, A. (2019). Metodología Innovadora basada en la Gamificación Educativa: Evaluación Tipo Test con la Herramienta QUIZIZZ. Profesorado. Revista de Curriculum y Formación del Profesorado, 23(3), 363-387. doi:http://dx.doi.org/10.30827/profesorado.v23i3.11232.</li>
+                            <li>Zambrano-Álava, A. P. (2020). La Gamificación: herramientas innovadoras para promover el aprendizaje autorregulado. Dominio de las Ciencias, 6(3), 349-369. doi:http://dx.doi.org/10.23857/dc.v6i3.1402.</li>
+                            <li>Zimmerman, B. J. (1994). Self-regulation in education: retrospect and prospect. En D. H. Schunk y B. J. Zimmerman (Eds.), Self-regulation of learning and performance. Issues and educational applications. Hillsdale, NJ: Erlbaum.</li>
+                            <li>Zimmerman, B. J. (1998). La autorregulación del aprendizaje. Educación técnica temprana. Primeros pasos a la integración. Recuperado de: https://www.earlytechnicaleducation.org/spanien/cap2lis5es.html</li>
+                        </ul>
+
+                    </div>
+                </details>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Variables globales ---
+            let currentXP = 0;
+            const metaXP = 500;
+            const etapasTotales = 6;
+            let etapasCompletadas = 0;
+
+            // DOM
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentPanels = document.querySelectorAll('.content-panel');
+            const xpChartCanvas = document.getElementById('xpChart');
+            const xpTotalElement = document.getElementById('xp-total');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            const chevron = document.getElementById('chevron');
+
+            // Inicializar gráfico (doughnut)
+            const ctx = xpChartCanvas.getContext('2d');
+            const xpChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['XP Acumulado', 'XP Faltante'],
+                    datasets: [{
+                        data: [0, metaXP],
+                        backgroundColor: ['#3B82F6', '#E5E7EB'],
+                        borderColor: ['#FFFFFF', '#FFFFFF'],
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+
+            // Navegación entre paneles
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const targetId = e.currentTarget.dataset.target;
+                    contentPanels.forEach(panel => panel.classList.remove('active'));
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    document.getElementById(targetId).classList.add('active');
+                    e.currentTarget.classList.add('active');
+                });
+            });
+
+            // Función para actualizar gráfico, porcentaje, badges
+            function updateXP(incremento = 0, insigniaId = null) {
+                // Sumar XP y clamping
+                currentXP = Math.max(0, currentXP + incremento);
+                const xpFaltante = Math.max(metaXP - currentXP, 0);
+                const porcentaje = Math.min((currentXP / metaXP) * 100, 100);
+
+                // Actualizar chart (evitar valores negativos)
+                xpChart.data.datasets[0].data = [currentXP, xpFaltante];
+                xpChart.update();
+
+                // Actualizar texto y barra
+                xpTotalElement.textContent = `${currentXP} XP`;
+                progressFill.style.width = `${porcentaje}%`;
+                progressText.textContent = `${Math.round(porcentaje)}%`;
+
+                // Desbloquear insignia si corresponde
+                if (insigniaId) {
+                    const insignia = document.getElementById(insigniaId);
+                    if (insignia) {
+                        insignia.classList.remove('locked');
+                        insignia.classList.add('unlocked');
+                    }
+                }
+            }
+
+            // Completar etapa (global)
+            window.completarEtapa = function(etapaNum, xp = 0, insigniaId = null) {
+                const nav = document.getElementById(`nav-etapa-${etapaNum}`);
+                if (!nav) return;
+
+                if (!nav.classList.contains('completed')) {
+                    nav.classList.add('completed');
+                    etapasCompletadas++;
+                    // marcar visual adicional (opcional)
+                    nav.classList.remove('active');
+
+                    // Actualizar XP y badges
+                    updateXP(xp, insigniaId);
+
+                    // Si etapa final -> desbloquear insignia final
+                    if (etapaNum === 6) {
+                        const finalInsignia = document.getElementById('insignia-final');
+                        if (finalInsignia) { finalInsignia.classList.remove('locked'); finalInsignia.classList.add('unlocked'); }
+                    }
+
+                    // Si completó todas las etapas desbloquear medalla (y sumar XP extra si querés)
+                    if (etapasCompletadas === etapasTotales) {
+                        // Desbloquear medalla después de un pequeño delay
+                        setTimeout(() => {
+                            const medalla = document.getElementById('insignia-medalla');
+                            if (medalla) { medalla.classList.remove('locked'); medalla.classList.add('unlocked'); }
+                        }, 700);
+                    }
+                }
+            };
+
+            // Formularios: asociar eventos y pasar insignia correspondiente
+            const formToEtapaMap = {
+                'form-etapa2': { etapa: 2, xp: 50, insignia: 'insignia-2', feedback: 'feedback-etapa2' },
+                'form-etapa4': { etapa: 4, xp: 75, insignia: 'insignia-4', feedback: 'feedback-etapa4' },
+                'form-etapa5': { etapa: 5, xp: 100, insignia: 'insignia-5', feedback: 'feedback-etapa5' },
+                'form-etapa6': { etapa: 6, xp: 150, insignia: 'insignia-final', feedback: 'feedback-etapa6' }
+            };
+
+            Object.keys(formToEtapaMap).forEach(formId => {
+                const form = document.getElementById(formId);
+                if (!form) return;
+                const cfg = formToEtapaMap[formId];
+                const feedback = document.getElementById(cfg.feedback);
+
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    if (!form.checkValidity()) {
+                        alert('Por favor, completa todos los campos requeridos.');
+                        return;
+                    }
+                    // Mostrar feedback
+                    if (feedback) { feedback.style.display = 'block'; }
+                    // Completar etapa pasando insignia
+                    completarEtapa(cfg.etapa, cfg.xp, cfg.insignia);
+                    // Reset form
+                    form.reset();
+                });
+            });
+
+            // Simulación Etapa 3: seleccionar opción
+            window.seleccionarOpcion = function(opcion, button) {
+                const feedback = document.getElementById('feedback-opcion');
+                if (!feedback) return;
+                feedback.style.display = 'block';
+
+                if (opcion === 'correcta') {
+                    feedback.className = 'feedback success';
+                    feedback.innerHTML = `
+                        <p class="font-bold flex items-center">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            ¡Respuesta Correcta!
+                        </p>
+                        <p>Has ganado <strong class="xp-gain">+100 XP</strong> y la Insignia de Autocontrol.</p>
+                    `;
+                    button.classList.add('option-correct');
+                    // completar etapa 3 y desbloquear insignia-3
+                    completarEtapa(3, 100, 'insignia-3');
+                } else {
+                    feedback.className = 'feedback';
+                    feedback.innerHTML = `
+                        <p class="font-bold flex items-center">
+                            <i class="fas fa-times-circle mr-2 text-red-600"></i>
+                            Respuesta Incorrecta
+                        </p>
+                        <p>Intenta de nuevo para ganar XP. La clave es la pausa y el autocontrol.</p>
+                    `;
+                    button.classList.add('option-incorrect');
+                }
+            };
+
+            // Chevron animado para details
+            const detailsEl = document.querySelector('details');
+            if (detailsEl) {
+                detailsEl.addEventListener('toggle', function() {
+                    chevron.style.transform = this.open ? 'rotate(180deg)' : 'rotate(0deg)';
+                });
+            }
+
+            // Inicialización (asegurar valores iniciales)
+            updateXP(0);
+
+            // --- (opcional) restaurar estado desde localStorage si querés persistencia ---
+            // Podés implementar guardado/restauración si lo necesitás (no lo agregué por simplicidad)
+        });
+    </script>
+</body>
+</html>
